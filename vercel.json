@@ -10,8 +10,8 @@
 		}
 	],
 	"functions": {
-		"api/svg.ts": {
-			"includeFiles": "svg.tailwind.css"
+		"api/*.ts": {
+			"maxDuration": 30
 		}
 	}
 }

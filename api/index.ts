@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { version } from "../package.json";
 import { fetchPageMetadata, MetadataParseError } from "../src/metadata";
+import { ResourceError } from "../src/network";
 import swagger from "../src/swagger.json";
 
 export default async function (req: VercelRequest, res: VercelResponse) {
@@ -37,7 +38,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
 		res.setHeader("cache-control", "s-maxage=3600, stale-while-revalidate");
 		return res.status(200).json(metadata);
 	} catch (error) {
-		if (error instanceof MetadataParseError) {
+		if (error instanceof MetadataParseError || error instanceof ResourceError) {
 			return res.status(error.statusCode).json({ message: error.message });
 		}
 		console.error(error);

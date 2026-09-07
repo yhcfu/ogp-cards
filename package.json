@@ -1,18 +1,14 @@
 {
-	"name": "ricapitolare",
-	"version": "2.1.2",
+	"name": "personal-ogp-cards",
+	"version": "2.2.0",
 	"author": "ci7lus <7887955+ci7lus@users.noreply.github.com>",
 	"license": "MIT",
 	"private": true,
 	"devDependencies": {
 		"@biomejs/biome": "2.5.5",
-		"@tailwindcss/cli": "4.3.3",
 		"@types/he": "1.2.3",
 		"@types/node": "24.13.3",
-		"@types/sharp": "0.32.0",
 		"@vercel/node": "5.8.26",
-		"autoprefixer": "10.5.4",
-		"tailwindcss": "4.3.3",
 		"tsx": "4.23.1",
 		"typescript": "5.9.3",
 		"vercel": "49.2.0"
@@ -24,19 +20,18 @@
 		"jschardet": "^3.1.4",
 		"page-metadata-parser": "^1.1.4",
 		"sharp": "^0.35.0",
-		"xss": "^1.0.15"
+		"ipaddr.js": "2.3.0"
 	},
 	"scripts": {
 		"dev": "vc dev",
-		"vercel-build": "./build.sh",
-		"format": "biome format --fix"
+		"vercel-build": "tsc --noEmit",
+		"format": "biome format --fix",
+		"test": "tsx --test tests/*.test.ts",
+		"check": "tsc --noEmit",
+		"preview:cards": "tsx scripts/preview-cards.ts"
 	},
-	"devEngines": {
-		"packageManager": {
-			"name": "pnpm",
-			"version": ">=11.0.0",
-			"onFail": "error"
-		}
-	},
-	"packageManager": "pnpm@11.17.0"
+	"packageManager": "pnpm@11.16.0",
+	"engines": {
+		"node": "24.x"
+	}
 }

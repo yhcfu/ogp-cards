@@ -23,10 +23,16 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Run Biome
         run: pnpm biome ci .
 
       - name: Typecheck
-        run: pnpm tsc
+        run: pnpm check
+
+      - name: Test
+        run: pnpm test
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level moderate

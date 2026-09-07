@@ -3,7 +3,7 @@
 	"info": {
 		"description": "Metadata/OGP-tag fetch API",
 		"version": "2.0.0",
-		"title": "ricapitolare",
+		"title": "Personal OGP cards",
 		"contact": {
 			"url": "https://github.com/ci7lus"
 		},
@@ -11,7 +11,6 @@
 			"name": "MIT"
 		}
 	},
-	"host": "ricapitolare.vercel.app",
 	"basePath": "/",
 	"schemes": ["https"],
 	"paths": {

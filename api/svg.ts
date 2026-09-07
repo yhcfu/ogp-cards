@@ -1,100 +1,76 @@
-import fs from "node:fs";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import sharp from "sharp";
 import { generateSvg } from "../src/image/ogpSvg";
-import {
-	fetchPageMetadata,
-	type IPageMetadata,
-	MetadataParseError,
-} from "../src/metadata";
+import { fetchPageMetadata } from "../src/metadata";
+import { fetchPublicResource, publicUrl, ResourceError } from "../src/network";
 
-export default async function (req: VercelRequest, res: VercelResponse) {
+export default async function (
+	req: Pick<VercelRequest, "method" | "query">,
+	res: VercelResponse,
+) {
 	res.setHeader("access-control-allow-origin", "*");
 	if (req.method === "OPTIONS") {
-		res.setHeader("access-control-allow-methods", "GET, OPTIONS");
-		res.setHeader("access-control-allow-headers", "*");
-		res.setHeader("access-control-max-age", "86400");
-		res.statusCode = 204;
-		res.end();
-		return;
+		res.setHeader("access-control-allow-methods", "GET, HEAD, OPTIONS");
+		return res.status(204).end();
 	}
-	const urlStr = req.query.url;
-	if (typeof urlStr !== "string") {
-		return res.status(500).json({ message: "url parse error" });
+	if (req.method !== "GET" && req.method !== "HEAD") {
+		res.setHeader("allow", "GET, HEAD, OPTIONS");
+		return res.status(405).end();
 	}
+	res.setHeader("x-content-type-options", "nosniff");
 	let url: URL;
 	try {
-		url = new URL(urlStr);
-	} catch (error) {
-		console.error(error);
-		return res.status(400).json({ message: "requested url is not valid" });
+		url = publicUrl(typeof req.query.url === "string" ? req.query.url : "");
+	} catch {
+		return res
+			.status(400)
+			.json({ message: "A public HTTP(S) URL is required" });
 	}
-	if (!["http:", "https:"].includes(url.protocol)) {
-		return res.status(400).json({ message: "requested url is not valid" });
-	}
-	const borderMode = req.query.border !== "no";
-
-	let style: string | null = null;
-	try {
-		style = await fs.promises.readFile("./svg.tailwind.css", "utf8");
-	} catch (error) {
-		console.error(error);
-	}
-	if (!style) {
-		return res.status(500).json({ message: "style load failed" });
-	}
-
 	try {
 		const { metadata, responseUrl } = await fetchPageMetadata(url.href);
-		const iconUrl = metadata.image || metadata.icon;
-		let icon: string | undefined;
-		try {
-			if (iconUrl) {
-				const r = await fetch(iconUrl, {
-					headers: {
-						"User-Agent":
-							"ricapitolare (+https://github.com/ci7lus/ricapitolare)",
-					},
-				});
-				if (!r.ok) {
-					throw new Error(`Failed to fetch icon: ${r.status}`);
-				}
-				const mime = r.headers.get("content-type")?.toLowerCase();
-				const arrayBuffer = await r.arrayBuffer();
-				const buff = await sharp(Buffer.from(arrayBuffer))
-					.resize(null, 128)
+		let image: string | undefined;
+		if (metadata.image) {
+			try {
+				const resource = await fetchPublicResource(
+					new URL(metadata.image, responseUrl).href,
+					{ maxBytes: 4 * 1024 * 1024, accept: "image/*" },
+				);
+				if (!resource.contentType.toLowerCase().startsWith("image/"))
+					throw new Error("Not an image");
+				const thumbnail = await sharp(resource.body, {
+					limitInputPixels: 25_000_000,
+					pages: 1,
+				})
+					.rotate()
+					.resize(320, 320, { fit: "cover", withoutEnlargement: true })
+					.webp({ quality: 80 })
 					.toBuffer();
-				icon = `data:${mime};base64,${buff.toString("base64")}`;
+				image = `data:image/webp;base64,${thumbnail.toString("base64")}`;
+			} catch {
+				/* A missing thumbnail must not hide the link title. */
 			}
-		} catch (error) {
-			console.error(error);
 		}
-		const svg = generateSvg({
-			style,
-			...metadata,
-			icon,
-			borderMode,
-			url: responseUrl,
-		});
-		res.setHeader("content-type", "image/svg+xml");
-		res.setHeader("cache-control", "s-maxage=3600, stale-while-revalidate");
-		return res.status(200).send(svg).end();
+		res.setHeader("content-type", "image/svg+xml; charset=utf-8");
+		res.setHeader(
+			"cache-control",
+			"public, max-age=300, s-maxage=86400, stale-while-revalidate=604800",
+		);
+		return res
+			.status(200)
+			.send(generateSvg({ ...metadata, url: responseUrl, image }));
 	} catch (error) {
-		console.error(error);
-		const dummyMetadata: IPageMetadata = {
-			url: url.href,
-			title: "Failed to fetch the page",
-			provider: "ricapitolare",
-		};
-		if (error instanceof MetadataParseError) {
-			dummyMetadata.description = `StatusCode: ${error.statusCode}`;
-		}
-		const svg = generateSvg({
-			style,
-			borderMode,
-			...dummyMetadata,
-		});
-		res.setHeader("content-type", "image/svg+xml");
-		return res.status(500).send(svg).end();
+		res.setHeader("cache-control", "no-store");
+		res.setHeader("content-type", "image/svg+xml; charset=utf-8");
+		return res
+			.status(
+				error instanceof ResourceError && error.statusCode === 400 ? 400 : 502,
+			)
+			.send(
+				generateSvg({
+					url: url.href,
+					title: "プレビューを取得できませんでした",
+					description: "リンクを開いてページをご覧ください。",
+				}),
+			);
 	}
 }

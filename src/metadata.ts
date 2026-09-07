@@ -1,8 +1,8 @@
 import domino from "domino";
 import iconv from "iconv-lite";
-// @ts-expect-error
 import { getMetadata } from "page-metadata-parser";
 import { detectEncode } from "./encoding";
+import { fetchPublicResource } from "./network";
 
 export class MetadataParseError extends Error {
 	constructor(
@@ -18,30 +18,20 @@ export async function fetchPageMetadata(url: string): Promise<{
 	metadata: IPageMetadata;
 	responseUrl: string;
 }> {
-	const r = await fetch(encodeURI(url), {
-		headers: { "User-Agent": "Twitterbot/1.0" },
+	const r = await fetchPublicResource(url, {
+		maxBytes: 2 * 1024 * 1024,
+		accept: "text/html",
 	});
-
-	if (r.status >= 400) {
-		throw new MetadataParseError(
-			r.status,
-			`remote status code was ${r.status}`,
-		);
-	}
-
-	const contentType = r.headers.get("content-type");
-	if (!contentType?.startsWith("text/html")) {
+	if (!r.contentType.toLowerCase().startsWith("text/html")) {
 		throw new MetadataParseError(400, "remote content was not html");
 	}
-
-	const arrayBuffer = await r.arrayBuffer();
-	const buf = Buffer.from(arrayBuffer);
+	const buf = r.body;
 	let html: string;
 	const encoding = detectEncode(buf);
 	if (encoding) {
 		html = iconv.decode(buf, encoding);
 	} else {
-		html = buf.toString("ascii");
+		html = buf.toString("utf8");
 	}
 
 	const { document } = domino.createWindow(html);
