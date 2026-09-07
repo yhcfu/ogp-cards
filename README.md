@@ -2,7 +2,7 @@
 
 A self-hosted Open Graph image service for Cosense, based on [ci7lus/ricapitolare](https://github.com/ci7lus/ricapitolare). The MIT license and upstream attribution are retained.
 
-The card follows a compact social link-preview layout: a large square thumbnail, a domain label, a two-line title and a two-line description on a near-black blue-gray surface with light text. Long URLs are omitted from the image. A missing thumbnail uses a neutral placeholder.
+The card follows a compact social link-preview layout: a large square thumbnail, a domain label, a two-line title and a two-line description on a near-black blue-gray surface with light text. Long URLs are omitted from the image. There is no outer stroke or thumbnail divider; the dark surface itself defines the card boundary. A missing thumbnail uses a neutral placeholder.
 
 Production: **https://ogp-cards.vercel.app**
 
