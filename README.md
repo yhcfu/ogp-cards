@@ -4,12 +4,16 @@ A self-hosted Open Graph image service for Cosense, based on [ci7lus/ricapitolar
 
 The card follows a compact social link-preview layout: a large square thumbnail, a domain label, a two-line title and a two-line description on a pale blue-gray surface with navy text. Long URLs are omitted from the image. A missing thumbnail uses a neutral placeholder.
 
+Production: **https://ogp-cards.vercel.app**
+
+Source: **https://github.com/yhcfu/ogp-cards**
+
 ## Use in Cosense
 
-Deploy the project, then use its HTTPS domain in this pattern:
+Use this pattern with the production domain:
 
 ```text
-[https://example.com/article https://YOUR-PROJECT.vercel.app/svg?url=https%3A%2F%2Fexample.com%2Farticle#.svg]
+[https://example.com/article https://ogp-cards.vercel.app/svg?url=https%3A%2F%2Fexample.com%2Farticle#.svg]
 ```
 
 The first URL is the click target. The second renders the card. `#.svg` lets Cosense recognize the response as an image. The existing `/svg?url=...` interface is preserved, so the writing UserScript only needs a new endpoint. Existing saved cards retain their previous endpoint until explicitly edited.
@@ -60,3 +64,5 @@ pnpm audit --prod
 ```
 
 Deployment is a separate step from local testing. After deployment, verify the exact production `/svg?url=...` URL while signed out before switching the Cosense endpoint.
+
+GitHub login is not yet connected to the Vercel account, so automatic deployment on Git push is not enabled. Publish updates with the CLI command above; connecting the GitHub login in Vercel account settings can enable Git integration later.
